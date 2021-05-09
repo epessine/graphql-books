@@ -2,9 +2,9 @@ const { gql } = require('apollo-server');
 
 const typeDefs = gql`
   type User {
+    _id: ID!
     username: String!
-    favoriteGenre: String!
-    id: ID!
+    favoriteGenre: String
   }
 
   type Token {
@@ -34,6 +34,7 @@ const typeDefs = gql`
       genre: String
     ): [Book!]!
     allAuthors: [Author!]!
+    allUsers: [User!]!
     currentUser: User
   }
 
@@ -48,9 +49,10 @@ const typeDefs = gql`
       name: String!
       born: Int
     ): Author
-    createUser(
+    addUser(
       username: String!
-      favoriteGenre: String!
+      password: String!
+      favoriteGenre: String
     ): User
     login(
       username: String!

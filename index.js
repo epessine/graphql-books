@@ -1,10 +1,11 @@
 const { ApolloServer } = require('apollo-server');
 const typeDefs = require('./graphql/typeDefs');
 const resolvers = require('./graphql/resolvers');
+const context = require('./graphql/context');
 const mongoose = require('mongoose');
-const config = require('./utils/config');
+const { DB_URI, PORT } = require('./utils/config');
 
-mongoose.connect(config.DB_URI, {
+mongoose.connect(DB_URI, {
   useNewUrlParser: true, 
   useUnifiedTopology: true, 
   useFindAndModify: false, 
@@ -20,8 +21,9 @@ mongoose.connect(config.DB_URI, {
 const server = new ApolloServer({
   typeDefs,
   resolvers,
+  context,
 });
 
-server.listen(config.PORT).then(({ url }) => {
+server.listen(PORT).then(({ url }) => {
   console.log(`Server ready at ${url}`);
 });

@@ -1,6 +1,10 @@
 const { UserInputError } = require('apollo-server');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const { SECRET_KEY } = require('../utils/config');
 const Author = require('../models/Author');
 const Book = require('../models/Book');
+const User = require('../models/User');
 
 const resolvers = {
   Author: {
@@ -31,9 +35,12 @@ const resolvers = {
       }
     },
     allAuthors: async () => await Author.find({}),
+    allUsers: async () => await User.find({}, { passwordHash: 0 }),
+    currentUser: (root, args, context) => context.currentUser,
   },
   Mutation: {
-    addBook: async (root, args) => {
+    addBook: async (root, args, context) => {
+      if (!context.currentUser) throw new UserInputError('wrong credentials');
       let book = new Book({ ...args });
       let author = await Author.findOne({ name: args.author });
       if (author) {
@@ -65,7 +72,8 @@ const resolvers = {
         });
       }
     },
-    editAuthor: async (root, args) => {
+    editAuthor: async (root, args, context) => {
+      if (!context.currentUser) throw new UserInputError('wrong credentials');
       const author = await Author.findOne({ name: args.name });
       if (author) {
         author.born = args.born;
@@ -78,7 +86,34 @@ const resolvers = {
         }
       }
       return null;
-    }
+    },
+    addUser: async (root, args) => {
+      const hash = await bcrypt.hash(args.password, 4);
+      const user = new User({ 
+        username: args.username,
+        passwordHash: hash,
+        favoriteGenre: args.favoriteGenre
+      });
+      try {
+        return await user.save();
+      } catch (error) {
+        throw new UserInputError(error.message, {
+          invalidArgs: args,
+        });
+      }
+    },
+    login: async (root, args) => {
+      const user = await User.findOne({ username: args.username });
+      const isCorrectPassword = await bcrypt.compare(args.password, user.passwordHash);
+      if ( !user || !isCorrectPassword ) {
+        throw new UserInputError('wrong credentials');
+      }
+      const userForToken = {
+        username: user.username,
+        id: user._id,
+      };
+      return { value: jwt.sign(userForToken, SECRET_KEY) };
+    },
   }
 };
 
