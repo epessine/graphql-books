@@ -1,10 +1,11 @@
-const { UserInputError } = require('apollo-server');
+const { UserInputError, PubSub } = require('apollo-server');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { SECRET_KEY } = require('../utils/config');
 const Author = require('../models/Author');
 const Book = require('../models/Book');
 const User = require('../models/User');
+const pubsub = new PubSub();
 
 const resolvers = {
   Author: {
@@ -47,6 +48,7 @@ const resolvers = {
         book.author = author._id;
         try {
           const savedBook = await book.save();
+          pubsub.publish('BOOK_ADDED', { bookAdded: savedBook });
           return Book
             .findOne({ _id: savedBook._id })
             .populate('author');
@@ -63,6 +65,7 @@ const resolvers = {
       book.author = author._id;
       try {
         const savedBook = await book.save();
+        pubsub.publish('BOOK_ADDED', { bookAdded: savedBook });
         return Book
           .findOne({ _id: savedBook._id })
           .populate('author');
@@ -114,7 +117,12 @@ const resolvers = {
       };
       return { value: jwt.sign(userForToken, SECRET_KEY) };
     },
-  }
+  },
+  Subscription: {
+    bookAdded: {
+      subscribe: () => pubsub.asyncIterator(['BOOK_ADDED'])
+    },
+  },
 };
 
 module.exports = resolvers;
