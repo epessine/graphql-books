@@ -48,10 +48,11 @@ const resolvers = {
         book.author = author._id;
         try {
           const savedBook = await book.save();
-          pubsub.publish('BOOK_ADDED', { bookAdded: savedBook });
-          return Book
+          const populatedBook = await Book
             .findOne({ _id: savedBook._id })
             .populate('author');
+          pubsub.publish('BOOK_ADDED', { bookAdded: populatedBook });
+          return populatedBook;
         } catch (e) {
           throw new UserInputError(e.message, {
             invalidArgs: args,
@@ -65,10 +66,11 @@ const resolvers = {
       book.author = author._id;
       try {
         const savedBook = await book.save();
-        pubsub.publish('BOOK_ADDED', { bookAdded: savedBook });
-        return Book
+        const populatedBook = await Book
           .findOne({ _id: savedBook._id })
           .populate('author');
+        pubsub.publish('BOOK_ADDED', { bookAdded: populatedBook });
+        return populatedBook;
       } catch (e) {
         throw new UserInputError(e.message, {
           invalidArgs: args,
